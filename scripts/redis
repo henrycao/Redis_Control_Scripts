@@ -1,0 +1,218 @@
+#/bin/sh
+##This is a script to manage a lot of redis run on one server
+##Author:Henrycao
+##Date:2013-04-23
+##Version:0.1
+##the basic function of start | start all | stop | stop all | restart | restart all
+##Date:2013-04-24
+##Version:0.2
+##improve the definition of define constant values
+##add the cpu switching function
+##DATE:2013-04-25
+##improve the restart function
+##make the code more clearly & add the notes
+#################
+#chkconfig: 2345 95 20
+
+#define redis port here, must match the configure file
+REDISPORT[1]="6379"
+REDISPORT[2]="6380"
+REDISPORT[3]="6381"
+REDISPORT[4]="6382"
+REDISPORT[5]="6383"
+REDISPORT[6]="6384"
+REDISPORT[7]="6385"
+REDISPORT[8]="6386"
+REDISPORT[9]="6387"
+REDISPORT[10]="6388"
+REDISPORT[11]="6389"
+REDISPORT[12]="6390"
+REDISPORT[13]="6391"
+REDISPORT[14]="6392"
+REDISPORT[15]="6393"
+REDISPORT[16]="6394"
+REDISPORT[17]="6395"
+##define global command
+EXEC=/opt/redis/bin/redis-server
+CLIEXEC=/opt/redis/bin/redis-cli
+CMD1=$1
+CMD2=$2
+CPUCORECNT=$(grep processor /proc/cpuinfo | wc -l)
+##define global constant variable
+LEN=${#REDISPORT[@]}
+###define pidfile path and configure file path
+define_path(){
+PIDFILEPATH=/var/run
+CONFPATH=/opt/redis/etc
+        for i in $(seq $LEN)
+                do
+                PIDFILE[$i]=$PIDFILEPATH/redis_${REDISPORT[$i]}.pid
+                CONF[$i]=$CONFPATH/redis_${REDISPORT[$i]}.conf
+        done
+}
+##usage
+## ${REDISPORT[1]} should be the same of the first of REDISPORT[1] this is the start of array start from 1 not 0
+usage(){
+        echo "Usage:  start all|stop all|restart all|start <port_number>|stop <port_number>|restart <port_number>"
+        echo "there are $LEN redis instances on this server, the port_number range is from ${REDISPORT[1]} to ${REDISPORT[${#REDISPORT[@]}]}"
+}
+
+##check wheather arg is right
+check_arg(){
+        if [ "$CMD1" == "" ] || [ "$CMD2" == "" ]
+                then
+                echo "missing args"
+                usage
+                exit 0
+        fi
+
+        if [ "$CMD1" != "start" ] && [ "$CMD1" != "stop" ] && [ "$CMD1" != "restart" ]
+                then
+                echo "wrong args"
+                usage
+                exit 0
+        fi
+
+        CNT=1
+        for i in ${REDISPORT[@]}
+                do
+                if [ "$i" == "$CMD2" ]
+                        then
+                        STAT=1
+                        break
+                else
+                        STAT=0
+                        CNT=$[$CNT+1]
+                fi
+        done
+
+        if [ "$STAT" == "0" ] && [ "$CMD2" != "all" ]
+                then
+                echo "wrong port number"
+                usage
+                exit 0
+        fi
+}
+
+### set cpu for redis
+### the redis instance will set to certain cpu core
+check_instance_num(){
+        if [ "$LEN" -gt "$CPUCORECNT" ]
+                then
+                echo "the redis instance number is larger than cpu cores"
+                echo "skip intelligent cpu swithing"
+                SKIP=1
+        else
+                SKIP=0
+        fi
+}
+
+set_cpu(){
+        REDISCNT=$(ps -eo args,psr | grep redis-server | grep -v grep | awk -F " " '{print $2}' | wc -l)
+        CPUSET=($(ps -eo args,psr | grep redis-server | grep -v grep | awk -F " " '{print $2}'))
+        CPUINFO=$[$RANDOM % $CPUCORECNT]
+        for i in $(seq $REDISCNT)
+                do
+                if [ "$CPUINFO" == "${CPUSET[$[$i-1]]}" ]
+                        then
+                        set_cpu
+                fi
+        done
+}
+
+## the command of start
+start_cmd(){
+        if [ -f ${PIDFILE[$CNT]} ]
+                then
+                echo "${PIDFILE[$CNT]} exists, process is already running or crashed"
+        else
+                echo "Starting Redis server ${REDISPORT[$CNT]}..."
+                check_instance_num
+                if [ "$SKIP" != "1" ]
+                        then
+                        set_cpu
+                        taskset -c $CPUINFO $EXEC ${CONF[$CNT]}
+                else
+                        $EXEC ${CONF[$CNT]}
+                fi
+        fi
+}
+
+start_all_cmd(){
+        for CNT in $(seq $LEN)
+                do
+                start_cmd
+        done
+}
+
+start(){
+        if [ "$CMD2" == "all" ]
+                then
+                start_all_cmd
+        else
+                start_cmd
+        fi
+}
+
+## the command of stop
+stop_cmd(){
+        if [ ! -f ${PIDFILE[$CNT]} ]
+                then
+                echo "${PIDFILE[$CNT]} does not exist, process is not running"
+        else
+                PID=$(cat ${PIDFILE[$CNT]})
+                echo "Stopping Redis ${REDISPORT[$CNT]}..."
+                $CLIEXEC -p ${REDISPORT[$CNT]}  shutdown
+                while [ -x /proc/${PID} ]
+                do
+                    echo "Waiting for Redis to shutdown ..."
+                    sleep 1
+                done
+                echo "Redis stopped"
+        fi
+}
+
+stop_all_cmd(){
+        for CNT in $(seq $LEN)
+                do
+                stop_cmd
+        done
+}
+
+stop(){
+        if [ "$CMD2" == "all" ]
+                then
+                stop_all_cmd
+        else
+                stop_cmd
+        fi
+}
+
+restart(){
+        stop
+        start
+}
+
+##main case
+main(){
+        define_path
+        check_arg
+        case "$CMD1" in
+                start)
+                        start
+                        ;;
+                stop)
+                        stop
+                        ;;
+                restart)
+                        stop
+                        start
+                        ;;
+                *)
+                        usage
+                        ;;
+        esac
+}
+
+main
+
