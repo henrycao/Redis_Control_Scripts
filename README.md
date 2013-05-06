@@ -11,5 +11,6 @@ This fuction can run on CentOS 6.3 no other issue has been tested.
 
 ### configure the script  
 1. define the instance number by set `REDISPORT`, usally we use the redis port by sequence  
-2. make sure the redis conf and redis log folder is ready  
+   In this case redis 6379 to 6387 use aof, redis 6388 to 6392 use save, redis 6392 to 6395 use both
+2. make sure the redis conf and redis log is ready  
 3. just run it.  
