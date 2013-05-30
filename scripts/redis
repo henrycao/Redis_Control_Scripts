@@ -59,14 +59,14 @@ usage(){
 
 ##check wheather arg is right
 check_arg(){
-        if [ "$CMD1" == "" ] || [ "$CMD2" == "" ]
+        if [ "$CMD1" == "" -o  "$CMD2" == "" ]
                 then
                 echo "missing args"
                 usage
                 exit 0
         fi
 
-        if [ "$CMD1" != "start" ] && [ "$CMD1" != "stop" ] && [ "$CMD1" != "restart" ]
+        if [ "$CMD1" != "start" -a "$CMD1" != "stop" -a "$CMD1" != "restart" ]
                 then
                 echo "wrong args"
                 usage
@@ -86,7 +86,7 @@ check_arg(){
                 fi
         done
 
-        if [ "$STAT" == "0" ] && [ "$CMD2" != "all" ]
+        if [ "$STAT" == "0" -a "$CMD2" != "all" ]
                 then
                 echo "wrong port number"
                 usage
