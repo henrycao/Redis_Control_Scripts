@@ -122,6 +122,16 @@ set_cpu(){
 
 ## the command of start
 start_cmd(){
+	if [ ! -d /data/redis/redis_${REDISPORT[$CNT]} ]
+		then
+		mkdir -p /data/redis/redis_${REDISPORT[$CNT]}
+	fi
+	
+	if [ ! -d /data/log/redis ]
+		then
+		mkdir -p /data/log/redis
+	fi
+
         if [ -f ${PIDFILE[$CNT]} ]
                 then
                 echo "${PIDFILE[$CNT]} exists, process is already running or crashed"
