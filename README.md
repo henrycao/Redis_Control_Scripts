@@ -17,3 +17,7 @@ This fuction can run on CentOS 6.3 no other issue has been tested.
    the redis data dir is `/data/redis/redis_<port>`  
    the redis log  dir is `/data/log/redis/`    
 3. just run it.  
+
+### control.sh  
+defult is dbsize command for 6379-6382 instanse  
+you can also run `control.sh keys '*'` or `control.sh get a`
