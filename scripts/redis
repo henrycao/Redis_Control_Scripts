@@ -11,6 +11,9 @@
 ##DATE:2013-04-25
 ##improve the restart function
 ##make the code more clearly & add the notes
+##Version 0.3
+##DATE:2014-05-15
+##clear the Path problems
 #################
 #chkconfig: 2345 95 20
 
@@ -38,6 +41,9 @@ CLIEXEC=/opt/redis/bin/redis-cli
 CMD1=$1
 CMD2=$2
 CPUCORECNT=$(grep processor /proc/cpuinfo | wc -l)
+DATAPATH=/data/redis
+LOGPATH=/data/log/redis
+
 ##define global constant variable
 LEN=${#REDISPORT[@]}
 ###define pidfile path and configure file path
@@ -122,14 +128,14 @@ set_cpu(){
 
 ## the command of start
 start_cmd(){
-	if [ ! -d /data/redis/redis_${REDISPORT[$CNT]} ]
+	if [ ! -d $DATAPATH/redis_${REDISPORT[$CNT]} ]
 		then
-		mkdir -p /data/redis/redis_${REDISPORT[$CNT]}
+		mkdir -p $DATAPATH/redis_${REDISPORT[$CNT]}
 	fi
 	
-	if [ ! -d /data/log/redis ]
+	if [ ! -d $LOGPATH/redis ]
 		then
-		mkdir -p /data/log/redis
+		mkdir -p $LOGPATH/redis
 	fi
 
         if [ -f ${PIDFILE[$CNT]} ]
